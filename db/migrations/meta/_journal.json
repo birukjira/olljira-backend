@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1786739405883,
+      "tag": "0000_tiny_ego",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1786744488406,
+      "tag": "0001_moaning_stardust",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1786749023991,
+      "tag": "0002_contact_submissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1786753000025,
+      "tag": "0003_testimonials",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1786765000000,
+      "tag": "0004_password_auth",
+      "breakpoints": true
+    }
+  ]
+}

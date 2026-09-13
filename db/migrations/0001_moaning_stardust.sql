@@ -1,0 +1,23 @@
+CREATE TABLE `jobs` (
+	`id` bigint unsigned AUTO_INCREMENT NOT NULL,
+	`slug` varchar(255) NOT NULL,
+	`title` varchar(255) NOT NULL,
+	`excerpt` text,
+	`department` varchar(255),
+	`location` varchar(255),
+	`workplaceType` enum('ONSITE','REMOTE','HYBRID') DEFAULT 'ONSITE',
+	`employmentType` enum('FULL_TIME','PART_TIME','CONTRACT','INTERNSHIP','TEMP') DEFAULT 'FULL_TIME',
+	`seniority` varchar(50),
+	`applyEmail` varchar(255),
+	`externalApplyUrl` varchar(500),
+	`deadlineAt` timestamp,
+	`canApply` boolean NOT NULL DEFAULT true,
+	`featuredImage` text,
+	`contentHtml` longtext,
+	`published` boolean NOT NULL DEFAULT true,
+	`sortOrder` int NOT NULL DEFAULT 0,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `jobs_id` PRIMARY KEY(`id`),
+	CONSTRAINT `jobs_slug_unique` UNIQUE(`slug`)
+);

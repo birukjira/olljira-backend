@@ -1,0 +1,19 @@
+<p><span style="white-space: pre-wrap;">Most offices in Addis Ababa run on a flat network: every computer, printer, camera, phone, and guest laptop on one big switch, all able to talk to each other. It works — right up until it doesn't. A single infected laptop reaches the CCTV recorder, a visitor on Wi-Fi can browse the file server, and one broadcast storm slows down the whole floor. The fix is not exotic. It's a Layer 3 design, and it costs less than most businesses expect.
+
+What "Layer 3" actually means
+A Layer 2 network just connects devices — every machine lives in the same neighborhood. Layer 3 adds routing between neighborhoods. Your accounting PCs live in one VLAN, guest Wi-Fi in another, cameras in a third, and a Layer 3 switch or router decides what is allowed to pass between them. Nothing reaches anywhere unless the design says so.
+
+The signs your office has outgrown a flat network
+If your CCTV system, office computers, and guest Wi-Fi share one network, a problem in one becomes a problem in all. If your VoIP phones crackle when someone moves a big file, voice traffic has no priority lane. If a single misbehaving device can slow everyone down, broadcasts have nowhere to be contained. And if a visitor's laptop can reach your server by simply plugging in — or joining the wrong Wi-Fi — that is a security gap with a door wide open.
+
+What a proper design looks like
+On our projects, a typical small office gets separate VLANs for staff computers, management and servers, CCTV, voice, and guest Wi-Fi — each with its own subnet, firewall rules between them, and QoS so phone calls always win over file downloads. Ceiling access points broadcast multiple SSIDs onto the right VLANs, so staff and guests share one Wi-Fi system but never the same network. At Summit General Hospital this scales to nine floors: wards, administration, imaging, and guests all segmented, with the PBX and HIMS servers reachable only by the departments that need them.
+
+"But we only have twenty staff"
+Segmentation is not about size — it is about what a failure or an intruder can reach. A twenty-person office with cameras, phones, and guest Wi-Fi on one flat network has the same exposure as a big one. The difference is cost: with modern managed switches and a single Layer 3 core, a properly segmented twenty-person office is a one-time design exercise, not an enterprise budget.
+
+What to ask your installer
+Before anyone configures anything, ask to see the VLAN plan on paper: which departments and devices go where, what each segment may reach, and how guests are isolated. Ask how voice traffic is protected, how the CCTV recorder is shielded from office machines, and what the failover plan is if the core switch dies. If the answers are "we'll figure it out on site," the design phase is being skipped — and you will pay for it later in downtime and callouts.
+
+The bottom line
+A Layer 3 design is the difference between a network that just connects things and a network that protects your business. We design, configure, and document it — VLAN plans, firewall rules, and access point layouts included in your handover folder — so the next technician, years from now, can see exactly how your office is meant to run.</span></p>

@@ -1,0 +1,22 @@
+<p><span style="white-space: pre-wrap;">Every office in Addis Ababa starts the same way: one landline at reception, and everyone else on their own mobile. It works — until a customer calls the landline for someone who is out, a missed call means a missed order, and your sales team is giving out personal numbers that leave with them when they resign. An IP phone system (an IP PBX) fixes all of this using the network cabling your office already has.
+
+What an IP PBX actually is
+A traditional phone system needs its own wiring, its own exchange box, and a technician from the phone company for every change. An IP PBX is a small server — often just an appliance the size of a router — that runs your phone system over the same network cables as your computers. Desk phones plug into network ports, calls travel as data, and adding a new extension is a two-minute job in a web page, not a site visit. Calls to the outside world still reach the normal phone network through a gateway or a SIP trunk, so customers dial your regular number and notice nothing.
+
+What small offices actually gain
+The features that matter day to day are the simple ones. Every desk gets an extension, so "call Biruk on 102" replaces shouting across the floor. An auto-attendant answers with a professional greeting and routes callers — press 1 for sales, 2 for support — even when reception is at lunch. Calls follow people: ring the desk first, then the mobile, so an absent colleague stops meaning a lost customer. Voicemails arrive as audio attachments in email, so nothing gets written on a sticky note and lost. And call recording, where appropriate, settles "but I was told…" disputes in seconds.
+
+The hidden benefit: your number outlives your staff
+When a salesperson leaves with a customer list on their personal mobile, those relationships walk out the door. When customers call the company number and reach whoever now holds extension 105, the relationship stays with the business. For growing offices this is worth more than any feature list — the phone number becomes a company asset, not a personal one.
+
+What it needs from your network
+IP phones live or die by the network underneath them. They need Power over Ethernet switches so each phone is powered through its network cable — no adapter per desk, and phones keep working through a power cut as long as the switch is on battery backup. They need QoS configured so voice packets always jump the queue ahead of file downloads, or calls crackle whenever someone moves a big file. And they belong on their own VLAN, separated from office computers — which is why we usually install an IP PBX alongside a Layer 3 network design rather than on top of a flat one. At Solkeb Hotel, the PBX runs on the same segmented network as the guest Wi-Fi and CCTV, and reception-to-room calls work on every floor from one appliance in the mini server room.
+
+"What happens when the internet or power goes down?"
+A fair question, and the right design answers it. The PBX, switches, and phones sit on battery backup, so internal calls — reception to accounts, office to warehouse — keep working through a blackout. Calls to the outside world depend on your line or trunk, so we configure a fallback route: if the primary trunk fails, outbound calls can divert to a mobile or a second line automatically. The one answer you should not accept is "it will probably be fine."
+
+What to ask your installer
+Ask whether the phones run on PoE and how long the system survives a power cut — in minutes, demonstrated, not estimated. Ask how a new extension is added and whether you can do it yourself from a web page. Ask how calls behave when a line or trunk fails, and whether voicemail-to-email and call recording are licensed features or included. And ask who holds the administrator password at handover — the system should be yours, documented, not locked to whoever installed it.
+
+The bottom line
+An IP PBX turns telephony from a monthly frustration into infrastructure you own: extensions that follow people, a number that stays with the business, and changes you make yourself in minutes. We design it together with the network it depends on — PoE, QoS, VLANs, and battery backup included — so the phones work on the bad days, not just the good ones.</span></p>
