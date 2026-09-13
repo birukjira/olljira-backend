@@ -32,6 +32,36 @@ import {
   setSetting,
 } from "./queries/content";
 
+/**
+ * Build a PATCH schema from a create schema: every field becomes optional
+ * and — crucially — field defaults are stripped. Zod's .partial() keeps
+ * .default() wrappers, so omitted keys were being parsed to their defaults
+ * and then written to the DB, wiping existing values on partial updates.
+ */
+function patchOf<T extends z.ZodRawShape>(schema: z.ZodObject<T>) {
+  const shape = schema.shape;
+  const out: Record<string, z.ZodTypeAny> = {};
+  for (const key of Object.keys(shape)) {
+    let field = shape[key] as unknown as z.ZodTypeAny;
+    // Unwrap Default/Optional/Nullable/Readonly/Prefault layers to the base type
+    for (;;) {
+      const def = (field as z.ZodTypeAny)._def;
+      const inner = (def as { innerType?: unknown }).innerType as
+        | z.ZodTypeAny
+        | undefined;
+      if (!inner) break;
+      const type = (def as { type?: string }).type;
+      if (type === "default" || type === "optional" || type === "nullable" || type === "prefault") {
+        field = inner;
+      } else {
+        break;
+      }
+    }
+    out[key] = field.optional();
+  }
+  return z.object(out);
+}
+
 const postInput = z.object({
   slug: z.string().min(2).regex(/^[a-z0-9-]+$/, "slug: lowercase letters, numbers, dashes"),
   title: z.string().min(3),
@@ -143,7 +173,7 @@ export const contentRouter = createRouter({
       return findPostById(id);
     }),
     updatePost: adminQuery
-      .input(z.object({ id: z.number(), data: postInput.partial() }))
+      .input(z.object({ id: z.number(), data: patchOf(postInput) }))
       .mutation(async ({ input }) => {
         await getDb().update(posts).set(input.data).where(eq(posts.id, input.id));
         return findPostById(input.id);
@@ -164,7 +194,7 @@ export const contentRouter = createRouter({
       return findProjectById(id);
     }),
     updateProject: adminQuery
-      .input(z.object({ id: z.number(), data: projectInput.partial() }))
+      .input(z.object({ id: z.number(), data: patchOf(projectInput) }))
       .mutation(async ({ input }) => {
         await getDb()
           .update(projects)
@@ -188,7 +218,7 @@ export const contentRouter = createRouter({
       return findJobById(id);
     }),
     updateJob: adminQuery
-      .input(z.object({ id: z.number(), data: jobInput.partial() }))
+      .input(z.object({ id: z.number(), data: patchOf(jobInput) }))
       .mutation(async ({ input }) => {
         await getDb().update(jobs).set(input.data).where(eq(jobs.id, input.id));
         return findJobById(input.id);
@@ -206,7 +236,7 @@ export const contentRouter = createRouter({
       return findTestimonialById(id);
     }),
     updateTestimonial: adminQuery
-      .input(z.object({ id: z.number(), data: testimonialInput.partial() }))
+      .input(z.object({ id: z.number(), data: patchOf(testimonialInput) }))
       .mutation(async ({ input }) => {
         await getDb()
           .update(testimonials)
@@ -227,7 +257,7 @@ export const contentRouter = createRouter({
       return { id };
     }),
     updateHeroSlide: adminQuery
-      .input(z.object({ id: z.number(), data: heroSlideInput.partial() }))
+      .input(z.object({ id: z.number(), data: patchOf(heroSlideInput) }))
       .mutation(async ({ input }) => {
         await getDb()
           .update(heroSlides)
