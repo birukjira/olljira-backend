@@ -62,6 +62,10 @@ export const projectContent: Record<
     overviewHtml: load("medina-patient-portal.overviewHtml.html"),
     descriptionHtml: load("medina-patient-portal.descriptionHtml.html"),
   },
+  "medina-care-mobile-app": {
+    overviewHtml: load("medina-care-mobile-app.overviewHtml.html"),
+    descriptionHtml: load("medina-care-mobile-app.descriptionHtml.html"),
+  },
 };
 
 export const jobContent: Record<string, string> = {
