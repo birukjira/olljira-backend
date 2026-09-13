@@ -102,7 +102,7 @@ export const seedData = {
       "firstTag": "Mobile App",
       "clientName": "Medina Primary Hospital, Jijiga",
       "cardDescription": "Launching soon: telemedicine video consultations, online appointment booking, in-app payments, and portal results — the Medina Primary Hospital experience in every patient's pocket.",
-      "featuredImage": "",
+      "featuredImage": "/images/case-studies/medina-care-app.webp",
       "imageCaption": "Medina Care — launching soon",
       "liveUrl": "",
       "tagIds": "",
