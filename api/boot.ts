@@ -1,5 +1,8 @@
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
+import { cors } from "hono/cors";
+import fs from "fs";
+import path from "path";
 import type { HttpBindings } from "@hono/node-server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "./router";
@@ -9,6 +12,39 @@ import { env } from "./lib/env";
 const app = new Hono<{ Bindings: HttpBindings }>();
 
 app.use(bodyLimit({ maxSize: 50 * 1024 * 1024 }));
+
+/* -------- CORS: only needed when the frontend lives on another origin -------- */
+// Set CORS_ORIGIN in Dokploy, e.g. "https://olljira.com" (comma-separated for
+// multiple). When unset, no CORS headers are emitted (same-origin setups).
+const corsOrigins = (process.env.CORS_ORIGIN ?? "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+if (corsOrigins.length > 0) {
+  app.use(
+    "/api/*",
+    cors({
+      origin: corsOrigins,
+      credentials: true,
+      allowMethods: ["GET", "POST", "OPTIONS"],
+      allowHeaders: ["Content-Type"],
+      maxAge: 86400,
+    }),
+  );
+}
+
+/* -------- health check (Dokploy / Pangolin monitor this) -------- */
+app.get("/api/health", async (c) => {
+  let db = false;
+  try {
+    const { getDb } = await import("./queries/connection");
+    await getDb().execute("SELECT 1");
+    db = true;
+  } catch {
+    db = false;
+  }
+  return c.json({ status: "ok", database: db });
+});
 
 /* -------- CMS media: serve uploaded images from the database -------- */
 app.get("/api/media/:id", async (c) => {
@@ -67,9 +103,14 @@ export default app;
 
 if (env.isProduction) {
   const { serve } = await import("@hono/node-server");
-  const { serveStaticFiles } = await import("./lib/vite");
   const { ensureSchemaAndSeed } = await import("./bootstrap");
-  serveStaticFiles(app);
+  // Static hosting is optional: when the frontend is deployed separately
+  // (e.g. cPanel) the image has no dist/public — serve API only.
+  const publicDir = path.resolve(import.meta.dirname, "../dist/public");
+  if (fs.existsSync(path.join(publicDir, "index.html"))) {
+    const { serveStaticFiles } = await import("./lib/vite");
+    serveStaticFiles(app);
+  }
 
   const port = parseInt(process.env.PORT || "3000");
   await ensureSchemaAndSeed();
