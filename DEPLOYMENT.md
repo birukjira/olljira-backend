@@ -1,118 +1,120 @@
 # OllJira Website — Deployment Guide
 
-> How the OllJira site goes live: static frontend on cPanel (auto-deployed by GitHub Actions), backend + MariaDB on the homelab via Dokploy, exposed through the Pangolin tunnel.
-> Follows the same pattern as `Homelab_Deployment_Handover.md` (birukjira.site). Read that first for the tunnel/Dokploy/npm-bug background.
+> **Recommended setup (all-in-one cPanel):** frontend AND backend both live on cPanel. GitHub Actions auto-deploy both on every push to `main`. No VPS, no tunnel, one host.
+> The Dokploy/homelab alternative is kept at the bottom as a fallback.
 
-## Architecture
+## Architecture (all-in-one cPanel)
 
 ```
 Visitor
-  ├─► olljira.com            → cPanel shared hosting, static Vite/React dist
-  │        │ cross-origin (CORS, credentials)
+  ├─► olljira.com        → cPanel static site (dist/, auto-deployed)
+  │        │ cross-origin, cookies
   │        ▼
-  └─► api.olljira.com        → Linode VPS 172.104.247.216 (Pangolin)
-                                     │ WireGuard tunnel (Newt on homelab)
-                                     ▼
-                               homelab laptop
-                                 ├── Dokploy → olljira-api (Hono+tRPC, :3000→published port)
-                                 └── Dokploy → olljira-mariadb (mariadb:11)
+  └─► api.olljira.com    → cPanel "Setup Node.js App" (Passenger)
+                             └── cPanel MySQL/MariaDB database
 ```
 
 ---
 
-## 1. Frontend → cPanel (GitHub Actions)
+## 1. cPanel one-time setup
 
-Workflow: `.github/workflows/deploy.yml` in **olljira-frontend**. Every push to `main` builds `dist/` and uploads it over FTPS. `.htaccess` (SPA fallback) ships inside `dist/` automatically from `public/.htaccess`.
+### a) Database
+1. cPanel → **MySQL® Databases** → create database `olljira` and a user with a strong password; add the user to the DB with **ALL PRIVILEGES**.
+2. Your `DATABASE_URL` will be: `mysql://USER:PASS@localhost:3306/DBNAME` (cPanel prefixes names, e.g. `cpaneluser_olljira`).
 
-### One-time GitHub setup (repo: `birukjira/olljira-frontend`)
-
-Settings → Secrets and variables → Actions:
-
-**Secrets:**
-| Name | Value |
-|---|---|
-| `FTP_SERVER` | cPanel FTP host (e.g. `ftp.olljira.com` or the server IP) |
-| `FTP_USERNAME` | cPanel FTP user |
-| `FTP_PASSWORD` | cPanel FTP password |
-
-**Variables:**
-| Name | Value |
-|---|---|
-| `VITE_API_URL` | `https://api.olljira.com` (no trailing slash) |
-| `FTP_SERVER_DIR` | cPanel web root path, e.g. `/public_html/` |
-
-### cPanel side
-
-1. Point the domain's document root at the directory above.
-2. Enable SSL (AutoSSL / Let's Encrypt) — required: session cookies are `Secure` off-localhost.
-3. Nothing else to install; the site is fully static.
-
----
-
-## 2. Backend → Dokploy on homelab
-
-### MariaDB service
-
-1. Dokploy → project `olljira` → **Add Database → MariaDB** (image `mariadb:11`).
-2. Copy the credentials from the **Credentials** tab — never type from memory.
-3. Internal hostname = the swarm service name (e.g. `olljira-mariadb-xxxx`) on `dokploy-network`.
-
-### API application
-
-1. Dokploy → **Add Application**, repo `birukjira/olljira-backend` via the GitHub App integration.
-2. **Build type: Dockerfile** — the root `Dockerfile` is the pnpm-based one (npm is broken on this network path; see handover §7). Dockerfile builds always use the **repo root** as context.
-3. **Advanced → Ports:** publish e.g. `3002 → 3000` (3001 is taken by the portfolio API).
-4. **Environment:**
+### b) Node.js app (the API)
+1. cPanel → **Setup Node.js App** → **Create Application**:
+   - Node.js version: **20 or newer**
+   - Application mode: **Production**
+   - Application root: `olljira-api` (this becomes `/home/USER/olljira-api/`)
+   - Application URL: **`api.olljira.com`** (create the subdomain first if asked)
+   - Application startup file: **`app.js`**
+2. In the app's **Environment variables**, add:
 
 ```
 NODE_ENV=production
-PORT=3000
 APP_ID=olljira-web
-APP_SECRET=<fresh random hex — do NOT reuse the local one>
-DATABASE_URL=mysql://<USER>:<PASS>@<mariadb-service-name>:3306/olljira
+APP_SECRET=<fresh random hex, 64 chars>
+DATABASE_URL=mysql://USER:PASS@localhost:3306/DBNAME
 ADMIN_EMAIL=admin@olljira.com
 ADMIN_PASSWORD=<strong password>
 CORS_ORIGIN=https://olljira.com,https://www.olljira.com
 ```
 
-5. Click **Deploy** (not Rebuild — rebuild uses the stale on-disk clone).
-6. First boot runs `ensureSchemaAndSeed()` automatically: creates tables and seeds content + the admin user.
+3. Don't start it yet — the code arrives via the first deploy (below). First boot creates all tables and seeds content automatically.
 
-### Verify
-
-```bash
-docker ps --filter "name=olljira" --format "{{.Names}}"
-curl -s http://127.0.0.1:3002/api/health    # expect {"status":"ok","database":true}
-```
-
-If `database:false`, check the logs for MySQL auth errors — the MariaDB user/password must come from the Credentials tab.
+### c) Frontend site
+1. Point `olljira.com`'s document root at `/public_html/` (default).
+2. Enable **AutoSSL** for both `olljira.com` and `api.olljira.com` — required: session cookies are `Secure` off-localhost.
 
 ---
 
-## 3. Public exposure → Pangolin
+## 2. GitHub one-time setup
 
-1. DNS (Namecheap): `A api.olljira.com → 172.104.247.216`.
-2. Pangolin → site `homelab-v2` → new resource `olljira-api`:
-   - `https://api.olljira.com` → target `127.0.0.1:3002`
-   - **Auth gate OFF** — the gate breaks CORS preflight (302 on OPTIONS kills every browser API call).
-3. Verify: `curl -s https://api.olljira.com/api/health` → `{"status":"ok","database":true}`.
+### Frontend repo (`birukjira/olljira-frontend`)
+Settings → Secrets and variables → Actions:
+
+**Secrets:** `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD` (cPanel FTP credentials)
+**Variables:**
+| Name | Value |
+|---|---|
+| `VITE_API_URL` | `https://api.olljira.com` |
+| `FTP_SERVER_DIR` | `/public_html/` |
+
+Workflow: `.github/workflows/deploy.yml` — builds `dist/` (includes `.htaccess` SPA fallback) and uploads over FTPS on every push.
+
+### Backend repo (`birukjira/olljira-backend`)
+**Secrets:** same `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`
+**Variables:**
+| Name | Value |
+|---|---|
+| `APP_SERVER_DIR` | `/home/USER/olljira-api/` (the Node app root from step 1b) |
+
+Workflow: `.github/workflows/deploy.yml` — builds the Passenger bundle (`dist/passenger.js`) and uploads `app.js` + `dist/` + `public/` + a fresh `tmp/restart.txt` (which makes Passenger restart the app automatically after each deploy).
 
 ---
 
-## 4. First end-to-end test
+## 3. Go live
 
-1. Push anything to `olljira-frontend` main (or run the workflow manually) → dist lands on cPanel.
-2. Open `https://olljira.com` — homepage loads, Work Samples/Blogs come from the API.
-3. Open `https://olljira.com/login`, sign in with `ADMIN_EMAIL` / `ADMIN_PASSWORD` → admin dashboard works.
-4. Refresh on a deep route (e.g. `/projects`) — must not 404 (the `.htaccess` fallback).
+1. Run the backend workflow first (Actions → "Deploy backend to cPanel" → Run workflow).
+2. In cPanel → Setup Node.js App → **Start** the app.
+3. Verify: `curl https://api.olljira.com/api/health` → `{"status":"ok","database":true}`.
+4. Run the frontend workflow → open `https://olljira.com`.
+5. Sign in at `https://olljira.com/login` with your `ADMIN_EMAIL`/`ADMIN_PASSWORD` → change content in `/admin`.
+6. Refresh a deep route like `/projects` — must not 404.
+
+### Troubleshooting
+| Symptom | Fix |
+|---|---|
+| `database:false` in health | Wrong `DATABASE_URL` — cPanel prefixes DB/user names (`cpaneluser_...`) |
+| 503 from Passenger | Check the app's error log in cPanel; usually a missing env var (`APP_SECRET`, `DATABASE_URL`) |
+| Old code after deploy | Passenger didn't restart — confirm `tmp/restart.txt` exists in the app root and re-run the workflow |
+| Login works locally but not live | SSL missing on either domain, or `CORS_ORIGIN` doesn't match the frontend origin exactly |
 
 ---
 
-## 5. Security checklist before launch
+## Fallback: backend on Dokploy/homelab
 
-- [ ] Strong `ADMIN_PASSWORD` in Dokploy env (local default `admin12345` must not go live)
-- [ ] Fresh `APP_SECRET` (the one in the local `.env` is committed to this machine only — still rotate for production)
-- [ ] `CORS_ORIGIN` set to the exact frontend origin(s)
-- [ ] SSL active on both `olljira.com` (cPanel AutoSSL) and `api.olljira.com` (Pangolin)
-- [ ] FTP credentials stored only in GitHub secrets
-- [ ] Pangolin auth gate OFF on the API resource, ON on dokploy dashboard (unchanged)
+<details>
+<summary>Click to expand the homelab alternative (Pangolin tunnel + Dokploy)</summary>
+
+Same pattern as `Homelab_Deployment_Handover.md`:
+
+1. Dokploy → MariaDB service (`mariadb:11`), copy credentials from the Credentials tab.
+2. Dokploy → Application from `birukjira/olljira-backend`, **Dockerfile build** (root `Dockerfile`, pnpm-based — npm is broken on that network path), publish port e.g. `3002 → 3000`.
+3. Env vars as above, with `DATABASE_URL=mysql://USER:PASS@<mariadb-service-name>:3306/olljira`.
+4. **Deploy** (not Rebuild). First boot auto-migrates and seeds.
+5. Pangolin → resource `olljira-api`: `https://api.olljira.com` → `127.0.0.1:3002`, **auth gate OFF** (gate breaks CORS preflight).
+6. Verify: `curl https://api.olljira.com/api/health`.
+
+</details>
+
+---
+
+## Security checklist before launch
+
+- [ ] Strong `ADMIN_PASSWORD` (never the local `admin12345`)
+- [ ] Fresh `APP_SECRET` for production
+- [ ] `CORS_ORIGIN` = exact frontend origin(s)
+- [ ] SSL active on `olljira.com` and `api.olljira.com`
+- [ ] FTP credentials only in GitHub secrets

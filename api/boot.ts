@@ -101,7 +101,7 @@ app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));
 
 export default app;
 
-if (env.isProduction) {
+if (env.isProduction && !process.env.PASSENGER) {
   const { serve } = await import("@hono/node-server");
   const { ensureSchemaAndSeed } = await import("./bootstrap");
   // Static hosting is optional: when the frontend is deployed separately
