@@ -11,6 +11,7 @@ import {
   createUser,
   findUserByEmail,
   touchLastSignIn,
+  updateUserPassword,
 } from "./queries/users";
 import type { TrpcContext } from "./context";
 
@@ -88,6 +89,30 @@ export const authRouter = createRouter({
     }),
 
   me: authedQuery.query((opts) => opts.ctx.user),
+
+  changePassword: authedQuery
+    .input(
+      z.object({
+        currentPassword: z.string().min(1),
+        newPassword: z.string().min(8).max(128),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const user = await findUserByEmail(ctx.user.email ?? "");
+      if (!user || !user.passwordHash) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Account not found." });
+      }
+      const ok = await bcrypt.compare(input.currentPassword, user.passwordHash);
+      if (!ok) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Current password is incorrect.",
+        });
+      }
+      const passwordHash = await bcrypt.hash(input.newPassword, 12);
+      await updateUserPassword(user.id, passwordHash);
+      return { success: true };
+    }),
 
   logout: authedQuery.mutation(async ({ ctx }) => {
     const opts = getSessionCookieOptions(ctx.req.headers);

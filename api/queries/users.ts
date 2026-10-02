@@ -37,3 +37,10 @@ export async function touchLastSignIn(id: number) {
     .set({ lastSignInAt: new Date() })
     .where(eq(schema.users.id, id));
 }
+
+export async function updateUserPassword(id: number, passwordHash: string) {
+  await getDb()
+    .update(schema.users)
+    .set({ passwordHash })
+    .where(eq(schema.users.id, id));
+}
