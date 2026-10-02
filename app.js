@@ -1,15 +1,19 @@
-// cPanel "Setup Node.js App" startup file.
-// Loads the bundled API; any boot crash is written to startup-error.log
-// so it can be read from cPanel File Manager (Passenger hides stderr).
-import { writeFileSync } from "node:fs";
+// cPanel / LiteSpeed (lsnode) startup file.
+// lsnode loads this file with require() — it MUST be plain CommonJS:
+// no import/export statements, no top-level await. The real app is the
+// bundled ESM dist/passenger.js, loaded via dynamic import() below.
+const { writeFileSync } = require("node:fs");
+const path = require("node:path");
 
-try {
+async function main() {
   await import("./dist/passenger.js");
-} catch (err) {
+}
+
+main().catch((err) => {
   const msg = err && err.stack ? err.stack : String(err);
   try {
-    writeFileSync(new URL("./startup-error.log", import.meta.url), msg + "\n");
+    writeFileSync(path.join(__dirname, "startup-error.log"), msg + "\n");
   } catch {}
   console.error(msg);
-  throw err;
-}
+  process.exit(1);
+});
