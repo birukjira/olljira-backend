@@ -30,6 +30,7 @@ jobs:
           cp app.js deploy/app.js
           cp dist/passenger.js deploy/dist/passenger.js
           cp -r public deploy/public
+          cp -r db deploy/db
           # Changing content forces re-upload → Passenger sees a newer
           # tmp/restart.txt and restarts the app after deploy.
           date -u +"%Y-%m-%dT%H:%M:%SZ ${{ github.sha }}" > deploy/tmp/restart.txt
