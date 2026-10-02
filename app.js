@@ -1,4 +1,15 @@
 // cPanel "Setup Node.js App" startup file.
-// Application root = this folder; Passenger runs this file and keeps the
-// process alive. The real code is the bundled dist/passenger.js.
-import "./dist/passenger.js";
+// Loads the bundled API; any boot crash is written to startup-error.log
+// so it can be read from cPanel File Manager (Passenger hides stderr).
+import { writeFileSync } from "node:fs";
+
+try {
+  await import("./dist/passenger.js");
+} catch (err) {
+  const msg = err && err.stack ? err.stack : String(err);
+  try {
+    writeFileSync(new URL("./startup-error.log", import.meta.url), msg + "\n");
+  } catch {}
+  console.error(msg);
+  throw err;
+}
